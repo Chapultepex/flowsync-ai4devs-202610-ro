@@ -10,8 +10,14 @@ function App() {
 
   return (
     <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/signup" element={<SignupPage />} />
+      <Route
+        path="/login"
+        element={token ? <Navigate to="/profile" replace /> : <LoginPage />}
+      />
+      <Route
+        path="/signup"
+        element={token ? <Navigate to="/profile" replace /> : <SignupPage />}
+      />
       <Route element={<ProtectedRoute />}>
         <Route path="/profile" element={<ProfilePage />} />
       </Route>

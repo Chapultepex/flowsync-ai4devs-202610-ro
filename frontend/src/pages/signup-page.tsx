@@ -70,10 +70,14 @@ export function SignupPage() {
       if (!(error instanceof ApiError)) {
         setFormError('Ha ocurrido un error inesperado.')
       } else if (error.status === 422) {
-        const next = { ...error.fieldErrors }
+        const next: Record<string, string> = {}
+        for (const field of Object.keys(values)) {
+          if (error.fieldErrors[field]) next[field] = error.fieldErrors[field]
+        }
         if (error.fieldRules.email === 'database.unique')
           next.email = 'Este email ya está registrado.'
-        setFieldErrors(next)
+        if (Object.keys(next).length > 0) setFieldErrors(next)
+        else setFormError(error.message)
       } else {
         setFormError(error.message)
       }

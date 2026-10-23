@@ -19,8 +19,14 @@ export function LoginPage() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    setFieldErrors({})
     setFormError(null)
+
+    const errors: Record<string, string> = {}
+    if (!email.trim()) errors.email = 'El email es obligatorio.'
+    if (!password) errors.password = 'La contraseña es obligatoria.'
+    setFieldErrors(errors)
+    if (Object.keys(errors).length > 0) return
+
     setSubmitting(true)
     try {
       await login({ email: email.trim(), password })
@@ -29,7 +35,10 @@ export function LoginPage() {
       if (!(error instanceof ApiError)) {
         setFormError('Ha ocurrido un error inesperado.')
       } else if (error.status === 422) {
-        setFieldErrors(error.fieldErrors)
+        const { email: emailError, password: passwordError } = error.fieldErrors
+        if (emailError || passwordError)
+          setFieldErrors({ email: emailError, password: passwordError })
+        else setFormError(error.message)
       } else if (error.status === 400 || error.status === 401) {
         setFormError('Email o contraseña incorrectos.')
       } else {
