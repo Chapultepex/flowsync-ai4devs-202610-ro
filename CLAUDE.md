@@ -1,10 +1,10 @@
 # CLAUDE.md
 
-Este archivo orienta a Claude Code (claude.ai/code) cuando trabaja con el código de este repositorio.
+Este archivo orienta a Claude Code (claude.ai/code) cuando trabaja con el código de este repositorio. `AGENTS.md` es un enlace simbólico a este archivo, para que lo lean otras herramientas.
 
 ## Contexto del repositorio
 
-FlowSync es el repo de un ejercicio del curso (LIDR AI4Devs, cohorte 202610-ro); el README y `prompts.md` están en español. Es un monorepo con dos apps y sin `package.json` en la raíz. Ejecuta cada comando desde dentro de `backend/` o `frontend/`.
+FlowSync es el repo de un ejercicio del curso (LIDR AI4Devs, cohorte 202610-ro); el README y `prompts.md` están en español. Es un monorepo con dos apps y sin `package.json` en la raíz. Salvo los targets del `Makefile` raíz, ejecuta cada comando desde dentro de `backend/` o `frontend/`.
 
 - `backend/`: API en AdonisJS 7 (TypeScript, Lucid ORM sobre SQLite, validación con VineJS, auth por tokens). El README indica que el backend **ya existe y no se debe modificar** en este ejercicio. Léelo para conocer el contrato de la API.
 - `frontend/`: React 19 + Vite 8 + TypeScript. UI de login/registro/perfil con shadcn/ui contra la API del backend (ver "Estructura del frontend" más abajo).
@@ -14,6 +14,12 @@ FlowSync es el repo de un ejercicio del curso (LIDR AI4Devs, cohorte 202610-ro);
 Requiere **Node.js 24+**. Con Node 20, `node ace` falla con `Unknown file extension ".ts"`.
 
 ## Comandos
+
+Desde la raíz (macOS, Linux o WSL; en WSL, Node tiene que estar instalado dentro de la distro):
+```bash
+make setup   # npm install en backend y frontend, crea backend/.env, genera APP_KEY si falta, migraciones (idempotente)
+make start   # backend (PORT de backend/.env, 3333) + frontend :5173 a la vez; Ctrl+C para los dos. Falla si algún puerto está ocupado
+```
 
 Backend (`cd backend`):
 ```bash
