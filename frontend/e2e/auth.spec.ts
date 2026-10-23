@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
+const API_URL = process.env.VITE_API_URL ?? 'http://localhost:3333/api/v1'
 const password = 'secret123'
 
 function uniqueEmail() {
@@ -29,11 +30,19 @@ test('enlaces entre login y registro', async ({ page }) => {
 })
 
 test('el registro valida la contraseña en el cliente', async ({ page }) => {
+  const apiRequests: string[] = []
+  page.on('request', (request) => {
+    if (request.url().startsWith(API_URL)) apiRequests.push(request.url())
+  })
+
   await page.goto('/signup')
   await page.getByRole('button', { name: 'Crear cuenta' }).click()
+  await expect(page.getByText('El email es obligatorio.')).toBeVisible()
   await expect(
     page.getByText('La contraseña debe tener entre 8 y 32 caracteres.'),
   ).toBeVisible()
+  await expect(page).toHaveURL(/\/signup$/)
+  expect(apiRequests).toEqual([])
 })
 
 test('registro, perfil, logout y login', async ({ page }) => {
@@ -41,7 +50,7 @@ test('registro, perfil, logout y login', async ({ page }) => {
 
   await signup(page, email)
   await expect(page).toHaveURL(/\/profile$/)
-  await expect(page.getByText(email)).toBeVisible()
+  await expect(page.getByText(email, { exact: true })).toBeVisible()
   const token = await page.evaluate(() =>
     localStorage.getItem('flowsync.token'),
   )
@@ -55,12 +64,17 @@ test('registro, perfil, logout y login', async ({ page }) => {
   expect(
     await page.evaluate(() => localStorage.getItem('flowsync.token')),
   ).toBeNull()
+  // El token también queda revocado en el servidor.
+  const profile = await page.request.get(`${API_URL}/account/profile`, {
+    headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+  })
+  expect(profile.status()).toBe(401)
 
   await page.getByLabel('Email').fill(email)
   await page.getByLabel('Contraseña').fill(password)
   await page.getByRole('button', { name: 'Entrar' }).click()
   await expect(page).toHaveURL(/\/profile$/)
-  await expect(page.getByText(email)).toBeVisible()
+  await expect(page.getByText(email, { exact: true })).toBeVisible()
 })
 
 test('credenciales inválidas muestran un mensaje claro', async ({ page }) => {
