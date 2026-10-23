@@ -7,7 +7,7 @@ Este archivo orienta a Claude Code (claude.ai/code) cuando trabaja con el códig
 FlowSync es el repo de un ejercicio del curso (LIDR AI4Devs, cohorte 202610-ro); el README y `prompts.md` están en español. Es un monorepo con dos apps y sin `package.json` en la raíz. Ejecuta cada comando desde dentro de `backend/` o `frontend/`.
 
 - `backend/`: API en AdonisJS 7 (TypeScript, Lucid ORM sobre SQLite, validación con VineJS, auth por tokens). El README indica que el backend **ya existe y no se debe modificar** en este ejercicio. Léelo para conocer el contrato de la API.
-- `frontend/`: React 19 + Vite 8 + TypeScript. Sigue siendo la plantilla básica de Vite (todavía sin router, sin Tailwind y sin shadcn/ui). El trabajo previsto es una UI de login/registro hecha con shadcn/ui.
+- `frontend/`: React 19 + Vite 8 + TypeScript. UI de login/registro/perfil con shadcn/ui contra la API del backend (ver "Estructura del frontend" más abajo).
 - `README.md` se genera a partir de la lección del curso ("no se edita a mano"). No lo edites.
 - `prompts.md` es una plantilla donde el estudiante registra, al pie de la letra, cada prompt que ejecutó.
 
@@ -41,6 +41,8 @@ npm run format   # prettier --write src
 ```
 Un hook PostToolUse en `.claude/settings.json` ejecuta Prettier automáticamente sobre cada archivo editado dentro de `frontend/src/`. El frontend aún no tiene un test runner configurado.
 
+Estructura del frontend: Tailwind v4 + shadcn/ui (`components.json`, alias `@/` → `src/`), rutas con `react-router` en `src/App.tsx` (`/login`, `/signup`, `/profile` protegida). Las llamadas a la API pasan por `src/lib/api.ts` (base `VITE_API_URL`, por defecto `http://localhost:3333/api/v1`; desenvuelve `data` y lanza `ApiError` con los errores por campo), y la sesión (token en `localStorage`) vive en `src/lib/auth.tsx`. Los componentes de `src/components/ui/` los genera `npx shadcn@latest add`: no se editan a mano.
+
 ## Arquitectura del backend
 
 Flujo de una petición: `start/routes.ts` → controller → validator de VineJS → modelo Lucid → transformer → `ctx.serialize()`.
@@ -62,7 +64,7 @@ Flujo de una petición: `start/routes.ts` → controller → validator de VineJS
 | GET | `account/profile` | Bearer | – | `{ data: user }` |
 | POST | `account/logout` | Bearer | – | `{ message }` (sin envolver) |
 
-Reglas de validación (`app/validators/user.ts`): el email es obligatorio, válido, de 254 caracteres como máximo y único en el registro. La contraseña tiene entre 8 y 32 caracteres. `passwordConfirmation` es **obligatorio en el registro** y debe coincidir con `password`. Los errores de validación devuelven 422 con un array `errors` (campo y mensaje). Las credenciales de login incorrectas y la falta de token devuelven errores JSON 4xx.
+Reglas de validación (`app/validators/user.ts`): el email es obligatorio, válido, de 254 caracteres como máximo y único en el registro. La contraseña tiene entre 8 y 32 caracteres. `passwordConfirmation` es **obligatorio en el registro** y debe coincidir con `password`. `fullName` admite `null`, pero la clave tiene que venir en el body (si falta, 422 `required`). Los errores de validación devuelven 422 con un array `errors` (campo y mensaje). Las credenciales de login incorrectas y la falta de token devuelven errores JSON 4xx.
 
 ## Reglas de proceso
 - Antes de tocar código: crear una rama nueva (`git checkout -b feat/<slug>`). Nunca commitear directo en `main` / `s1/start`.
