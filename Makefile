@@ -5,6 +5,7 @@ SHELL := /bin/sh
 .DEFAULT_GOAL := help
 
 NODE_MAJOR_MIN := 24
+FRONTEND_PORT := 5173
 
 # Sale con 0 si algo escucha en localhost:<puerto>. `ace serve` y Vite no
 # fallan con el puerto ocupado: se mudan a otro, y el frontend acabaría
@@ -33,7 +34,7 @@ setup: check-node
 	@if [ ! -f backend/.env ]; then \
 		cp backend/.env.example backend/.env && echo "Creado backend/.env a partir de .env.example"; \
 	fi
-	@if grep -Eq '^APP_KEY=.+' backend/.env; then \
+	@if grep -Eq '^APP_KEY=[^[:space:]]+' backend/.env; then \
 		echo "APP_KEY ya existe, no se regenera"; \
 	else \
 		cd backend && node ace generate:key; \
@@ -48,16 +49,21 @@ setup: check-node
 #   también mataría al proceso que lanzó make.
 start: check-node
 	@[ -f backend/.env ] || { echo "Error: falta backend/.env. Ejecuta 'make setup' primero."; exit 1; }
-	@backend_port=$$(sed -n 's/^PORT=//p' backend/.env); \
-	for port in $${backend_port:-3333} 5173; do \
+	@backend_port=$$(sed -n 's/^PORT=//p' backend/.env | tail -n 1 | tr -d "\r\"' " | cut -d '#' -f 1); \
+	backend_port=$${backend_port:-3333}; \
+	case "$$backend_port" in ''|*[!0-9]*) echo "Error: PORT inválido en backend/.env: '$$backend_port'."; exit 1;; esac; \
+	for port in $$backend_port $(FRONTEND_PORT); do \
 		if node -e "$(PORT_IN_USE)" $$port; then \
 			echo "Error: el puerto $$port ya está en uso. Para el proceso que lo ocupa y vuelve a intentarlo."; exit 1; \
 		fi; \
-	done
-	@exec 3<&0; \
+	done; \
+	export VITE_API_URL="$${VITE_API_URL:-http://localhost:$$backend_port/api/v1}"; \
+	exec 3<&0; \
 	(cd backend && exec npm run dev <&3) & backend=$$!; \
-	(cd frontend && exec npm run dev <&3) & frontend=$$!; \
+	(cd frontend && exec npm run dev -- --port $(FRONTEND_PORT) --strictPort <&3) & frontend=$$!; \
+	stopped=0; \
 	stop() { kill -INT $$backend $$frontend 2>/dev/null; }; \
-	trap stop INT TERM HUP; \
+	trap 'stopped=1; stop' INT TERM HUP; \
 	while kill -0 $$backend 2>/dev/null && kill -0 $$frontend 2>/dev/null; do sleep 1; done; \
-	stop; wait
+	stop; wait; \
+	if [ $$stopped = 0 ]; then echo "Error: uno de los servidores se detuvo; se paró también el otro."; exit 1; fi
