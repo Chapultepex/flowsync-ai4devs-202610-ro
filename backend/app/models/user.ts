@@ -20,13 +20,19 @@ export default class User extends compose(UserSchema, withAuthFinder(hash)) {
   /**
    * Las palabras del nombre son los trozos separados por espacios, sean cuantos
    * sean; una cuenta sin nombre toma las iniciales de su email.
+   *
+   * Se cuentan caracteres y no unidades UTF-16: `charAt` y `slice` parten un
+   * emoji por la mitad y dejan una cadena que ni siquiera es texto válido.
    */
   get initials() {
     const nombre = this.displayName
     const [first, last] = nombre ? nombre.split(/\s+/) : this.email.split('@')
+    const primeros = (texto: string, cuantos: number) =>
+      Array.from(texto).slice(0, cuantos).join('')
+
     if (first && last) {
-      return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase()
+      return `${primeros(first, 1)}${primeros(last, 1)}`.toUpperCase()
     }
-    return `${first.slice(0, 2)}`.toUpperCase()
+    return primeros(first, 2).toUpperCase()
   }
 }
