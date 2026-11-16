@@ -52,7 +52,10 @@ export function TaskPage() {
   // Una dirección como /tasks/abc o /tasks/1.5 no es la de ninguna tarea. Se
   // dice igual que cuando el servidor no la encuentra, en lugar de dejar la
   // pantalla cargando para siempre.
-  const isInvalidId = !Number.isInteger(taskId) || taskId < 1
+  // La misma regla que aplica la ruta del backend: un entero positivo escrito de
+  // una sola manera. `Number('05')` o `Number('1e0')` darían 5 y 1 y abrirían
+  // esas tareas bajo una dirección que la API considera inexistente.
+  const isInvalidId = !/^[1-9][0-9]*$/.test(id ?? '')
 
   useEffect(() => {
     if (!token || isInvalidId) return
