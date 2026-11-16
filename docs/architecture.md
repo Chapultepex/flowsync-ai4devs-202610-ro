@@ -1,6 +1,22 @@
 # Arquitectura de FlowSync
 
-Este diagrama muestra los contenedores de FlowSync tal y como están hoy en el código: un frontend React que corre en el navegador, una API AdonisJS que atiende `/api/v1` y una base de datos SQLite en un fichero local. Las flechas indican quién llama a quién y con qué protocolo; cada caja resume lo que hay dentro de ella (rutas, controladores, modelos, transformers, tablas y pantallas).
+Estos diagramas muestran FlowSync tal y como está hoy en el código, en los dos primeros niveles del modelo C4. El nivel C1 (contexto) sitúa el sistema frente a quien lo usa y frente a todo lo que lo rodea. El nivel C2 (contenedores) abre el sistema: un frontend React que corre en el navegador, una API AdonisJS que atiende `/api/v1` y una base de datos SQLite en un fichero local. Las flechas indican quién llama a quién y con qué protocolo; en C2 cada caja resume lo que hay dentro (rutas, controladores, modelos, transformers, tablas y pantallas).
+
+## C1 — Contexto del sistema
+
+```mermaid
+C4Context
+  title Contexto de FlowSync
+
+  Person(persona, "Persona del equipo", "Gestiona las tareas del equipo desde el navegador")
+  System(flowsync, "FlowSync", "Lista compartida de tareas del equipo con responsable, estado y fecha de vencimiento")
+
+  Rel(persona, flowsync, "Crea cuenta, inicia sesion y gestiona tareas")
+```
+
+En el código no hay ningún sistema externo con el que FlowSync se comunique: ni dependencias de correo, almacenamiento de ficheros, colas o redis en los `package.json`, ni URLs que no sean `localhost` en `backend/` ni en `frontend/src/`. Por eso el diagrama solo tiene a la persona y al sistema.
+
+## C2 — Contenedores
 
 ```mermaid
 C4Container
