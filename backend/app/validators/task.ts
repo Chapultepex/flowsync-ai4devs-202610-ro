@@ -23,11 +23,16 @@ export const createTaskValidator = vine.create({
  * cosa, y pedir uno que no existe es otra que termina en 422 señalando el
  * campo. Un estado inventado jamás sale por aquí como lista vacía.
  *
+ * Es un enum y no un texto a secas: con `vine.string()` cualquier valor pasaba
+ * el validador y la consulta respondía con una lista vacía, que es justo lo que
+ * este campo existe para evitar.
+ *
  * Llega por query string y no por cuerpo, pero se valida igual: el validador
- * corre sobre `request.all()`, que mezcla ambos.
+ * corre sobre `request.all()`, que mezcla ambos. Admite un único estado: si la
+ * petición lo repite, el controlador deja el último antes de validar.
  */
 export const listTasksValidator = vine.create({
-  status: vine.string().optional(),
+  status: vine.enum(TASK_STATUSES).optional(),
 })
 
 /**

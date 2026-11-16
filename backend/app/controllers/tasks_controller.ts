@@ -46,7 +46,7 @@ export default class TasksController {
     required: false,
     enum: [...TASK_STATUSES],
     description:
-      'Un único estado. Si falta, la lista trae las pendientes y en curso, no «todas»; lo hecho solo sale con `status=done`.',
+      'Un único estado; si se repite, vale el último. Si falta, la lista trae las pendientes y en curso, no «todas»; lo hecho solo sale con `status=done`.',
   })
   @ApiResponse({
     status: 200,
@@ -61,6 +61,13 @@ export default class TasksController {
     type: ErrorResponse,
   })
   async index({ request, serialize }: HttpContext) {
+    // Un solo estado por petición: si llega repetido (`?status=a&status=b`), el
+    // último sustituye al anterior en lugar de sumarse ni de dar un error de tipo.
+    const pedido = request.qs().status
+    if (Array.isArray(pedido)) {
+      request.updateQs({ ...request.qs(), status: pedido.at(-1) })
+    }
+
     const { status } = await request.validateUsing(listTasksValidator)
 
     const query = Task.query().preload('assignee')

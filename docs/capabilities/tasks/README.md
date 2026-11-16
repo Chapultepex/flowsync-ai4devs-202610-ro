@@ -49,7 +49,6 @@ La tabla `tasks` (migraciones `create_tasks_table` y `add_due_date_to_tasks_tabl
 
 ### Dónde la implementación y la spec no coinciden hoy
 
-- **Filtro `status` inventado.** La spec exige `422` sobre el campo `status` para un estado que no existe («Un estado que no existe se rechaza, no se responde vacío»). `listTasksValidator` declara `status: vine.string().optional()` y `TasksController.index` solo hace `where('status', status)`, de modo que, por lectura del código, un estado inventado devolvería una lista vacía. No hay ningún test del filtro que lo compruebe. Ver [ADR 0001](../../adr/0001-openspec-como-fuente-de-verdad.md).
 - **Cuerpo de `PUT /due-date`.** Los scenarios de fijar y quitar la fecha envían solo `{ "dueDate": ... }`, pero `setTaskDueDateValidator` exige también `today`.
 
 ## Interfaz
@@ -81,6 +80,6 @@ make start     # backend en :3333 y frontend en :5173 (uso interactivo)
   node ace test functional --files=responsable # filtrar por fichero
   ```
 
-  Hoy cubren solo el responsable de la tarea, en la tarea suelta y en la lista ([`backend/tests/functional/tasks/`](../../../backend/tests/functional/tasks/)), además de `auth`. **No hay tests** de creación, lista y filtro, cambio de estado, ni vencimiento, y `tests/unit/` no existe: esas reglas solo se comprueban a mano.
+  Cubren el responsable de la tarea, la creación, la lista y su filtro por estado, el cambio de estado, el vencimiento, los identificadores de la ruta y la sesión obligatoria ([`backend/tests/functional/tasks/`](../../../backend/tests/functional/tasks/)), además de `auth`. `tests/unit/` no existe. No hay tests del cambio de título ni de nada que la spec deje fuera, y los scenarios de interfaz no tienen ninguno: el frontend no tiene runner.
 - **Ojo con la base de datos:** las suites functional usan el mismo fichero SQLite que el servidor de desarrollo (`backend/tmp/db.sqlite3`). Los tests de `tasks` aíslan lo que escriben con una transacción global; los que añadas deben hacerlo igual, o filtrarán estado a tu entorno.
 - **Frontend:** no hay runner de tests. La comprobación es a mano en el navegador y con `npm run build` (typecheck) y `npm run lint` dentro de `frontend/`.
