@@ -1,3 +1,4 @@
+import User from '#models/user'
 import { test } from '@japa/runner'
 import type { ApiClient } from '@japa/api-client'
 import testUtils from '@adonisjs/core/services/test_utils'
@@ -67,6 +68,39 @@ test.group('Auth | cuenta con el nombre en blanco', (group) => {
     const response = await client
       .get('/api/v1/account/profile')
       .header('Authorization', `Bearer ${registro.body().data.token}`)
+
+    response.assertStatus(200)
+    assert.isNull(response.body().data.fullName)
+  })
+
+  // La API no deja guardar un nombre en blanco (el cuerpo de la petición ya
+  // convierte las cadenas vacías en nulo), pero una cuenta que ya lo tiene
+  // guardado, venga de donde venga, debe contestar igual: sin nombre.
+  test('una cuenta con el nombre en blanco ya guardado inicia sesión con el nombre nulo', async ({
+    client,
+    assert,
+  }) => {
+    await User.create({ fullName: '   ', email: ADA, password: 'secreto123' })
+
+    const response = await client
+      .post('/api/v1/auth/login')
+      .json({ email: ADA, password: 'secreto123' })
+
+    response.assertStatus(200)
+    assert.isNull(response.body().data.user.fullName)
+  })
+
+  // Scenario «Perfil de una cuenta sin nombre», con el nombre ya guardado en blanco.
+  test('el perfil de una cuenta con el nombre en blanco ya guardado devuelve el nombre nulo', async ({
+    client,
+    assert,
+  }) => {
+    const user = await User.create({ fullName: '   ', email: ADA, password: 'secreto123' })
+    const token = await User.accessTokens.create(user)
+
+    const response = await client
+      .get('/api/v1/account/profile')
+      .header('Authorization', `Bearer ${token.value!.release()}`)
 
     response.assertStatus(200)
     assert.isNull(response.body().data.fullName)
