@@ -8,6 +8,16 @@ import testUtils from '@adonisjs/core/services/test_utils'
  * Aislamiento con transacción global, igual que en `auth/signup.spec.ts`: la
  * suite functional usa el mismo SQLite que el servidor de desarrollo.
  */
+
+/**
+ * El cliente de Japa busca la ruta en el registro tipado por su URL y no por su
+ * método: `/api/v1/tasks` es a la vez `index` (una lista) y `store` (una tarea),
+ * así que `data` llega tipado como la unión de ambas. Estas dos formas dicen cuál
+ * de las dos se espera en cada caso; no cambian lo que se comprueba.
+ */
+type TareaCreada = { id: number }
+type TareaDeLista = { assignee: Record<string, unknown> }
+
 test.group('Tasks | responsable de la tarea', (group) => {
   group.each.setup(() => testUtils.db().withGlobalTransaction())
 
@@ -26,7 +36,7 @@ test.group('Tasks | responsable de la tarea', (group) => {
       .json({ title: 'Preparar informe' })
     created.assertStatus(201)
 
-    const id = created.body().data.id
+    const id = (created.body().data as unknown as TareaCreada).id
     const response = await client
       .get(`/api/v1/tasks/${id}?today=2026-11-10`)
       .header('Authorization', `Bearer ${token}`)
@@ -50,7 +60,7 @@ test.group('Tasks | responsable de la tarea', (group) => {
       .post('/api/v1/tasks')
       .header('Authorization', `Bearer ${token}`)
       .json({ title: 'Preparar informe' })
-    const id = created.body().data.id
+    const id = (created.body().data as unknown as TareaCreada).id
 
     const single = await client
       .get(`/api/v1/tasks/${id}?today=2026-11-10`)
@@ -63,7 +73,7 @@ test.group('Tasks | responsable de la tarea', (group) => {
 
     const list = await client.get('/api/v1/tasks').header('Authorization', `Bearer ${token}`)
     list.assertStatus(200)
-    const listAssignee = list.body().data[0].assignee
+    const listAssignee = (list.body().data as unknown as TareaDeLista[])[0].assignee
     assert.notProperty(listAssignee, 'email')
     assert.notProperty(listAssignee, 'createdAt')
     assert.notProperty(listAssignee, 'updatedAt')
@@ -82,7 +92,7 @@ test.group('Tasks | responsable de la tarea', (group) => {
       .post('/api/v1/tasks')
       .header('Authorization', `Bearer ${token}`)
       .json({ title: 'Preparar informe' })
-    const id = created.body().data.id
+    const id = (created.body().data as unknown as TareaCreada).id
 
     const response = await client
       .get(`/api/v1/tasks/${id}?today=2026-11-10`)
