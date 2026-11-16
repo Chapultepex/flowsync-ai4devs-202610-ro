@@ -1,6 +1,6 @@
 # PROMPTS-HALR-s4
 
-FlowSync, sesion 4. Tres secuencias de prompts: el ciclo de verificacion (validar tests, corregir y revisar de forma adversarial) y, despues, dos rondas que cierran lo que el revisor adversarial encontro en cada pasada (validar cobertura, mejorar tests, ejecutarlos y corregir).
+FlowSync, sesion 4. Tres secuencias de prompts: el ciclo de verificacion (validar tests, corregir y revisar de forma adversari1al) y, despues, dos rondas que cierran lo que el revisor adversarial encontro en cada pasada (validar cobertura, mejorar tests, ejecutarlos y corregir).
 
 **Secuencia A:** Prompts 1 a 3 (ciclo original). **Secuencia B:** Prompts 4 a 7 (hallazgos de la primera revision adversarial). **Secuencia C:** Prompts 8 a 11 (hallazgos de la segunda revision, sobre las correcciones de la B). Cada secuencia parte de la tabla de "Hallazgos de partida" de su seccion.
 
