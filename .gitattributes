@@ -1,0 +1,4 @@
+# El Makefile y los scripts de shell tienen que mantener LF aunque se clonen en Windows
+Makefile text eol=lf
+*.sh text eol=lf
+*.env.example text eol=lf
