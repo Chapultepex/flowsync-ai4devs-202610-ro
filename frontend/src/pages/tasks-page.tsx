@@ -41,6 +41,8 @@ export function TasksPage() {
 
   const [tasks, setTasks] = useState<Task[] | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
+  // Cada vez que cambia se vuelve a pedir la lista: es lo que hace «Reintentar».
+  const [reloadKey, setReloadKey] = useState(0)
   // El filtro pedido no existe. Va aparte de `loadError` a propósito: son dos
   // finales distintos y compartirlos es justo lo que hay que evitar.
   const [invalidFilter, setInvalidFilter] = useState<string | null>(null)
@@ -93,7 +95,6 @@ export function TasksPage() {
       })
       .catch((error: unknown) => {
         if (cancelled) return
-        setTasks([])
 
         // Una sesión que el servidor ya no reconoce no se arregla con un aviso:
         // se cierra y el login explica por qué.
@@ -105,10 +106,14 @@ export function TasksPage() {
         // El 422 sobre `status` es el filtro inventado, y tiene su propio
         // final: nunca se convierte en una lista vacía.
         if (error instanceof ApiError && error.fieldErrors.status) {
+          setTasks([])
           setInvalidFilter(error.fieldErrors.status)
           return
         }
 
+        // Un fallo de carga NO deja una lista vacía: `tasks` se queda sin cargar.
+        // Vaciarla haría que el error se leyera como «aquí no hay nada», que es
+        // justo lo que no se sabe.
         setLoadError(
           error instanceof ApiError
             ? error.message
@@ -119,7 +124,7 @@ export function TasksPage() {
     return () => {
       cancelled = true
     }
-  }, [token, statusParam, expireSession])
+  }, [token, statusParam, expireSession, reloadKey])
 
   const handleFilter = (status: TaskStatus | null) => {
     // Quitar el filtro es borrar el parámetro, no poner uno que diga «todas»:
@@ -339,12 +344,10 @@ export function TasksPage() {
           <TaskFilter value={statusParam} onChange={handleFilter} />
         </div>
 
-        {(formError || statusError || loadError) && (
+        {(formError || statusError) && (
           <Alert variant="destructive" className="mb-6">
             <AlertCircleIcon />
-            <AlertDescription>
-              {formError ?? statusError ?? loadError}
-            </AlertDescription>
+            <AlertDescription>{formError ?? statusError}</AlertDescription>
           </Alert>
         )}
 
@@ -355,7 +358,24 @@ export function TasksPage() {
           </Alert>
         )}
 
-        {visibleTasks === undefined ? (
+        {loadError ? (
+          // Primer final de todos: la lista no se ha podido cargar. Se comprueba
+          // antes que cualquier vacío, porque un fallo no puede pintarse como
+          // «no hay tareas» ni dejar un spinner esperando algo que no va a llegar.
+          <Alert variant="destructive">
+            <AlertCircleIcon />
+            <AlertDescription className="flex flex-col items-start gap-3">
+              <span>{loadError}</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setReloadKey((key) => key + 1)}
+              >
+                Reintentar
+              </Button>
+            </AlertDescription>
+          </Alert>
+        ) : visibleTasks === undefined ? (
           <div
             className="text-muted-foreground flex justify-center p-10"
             role="status"
