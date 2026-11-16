@@ -129,5 +129,6 @@ La URL de la API sale de `VITE_API_URL` (ver `frontend/.env.example`); por defec
 ## Reglas de proceso
 - La rama es por unidad de trabajo, no por petición. Antes de tocar código: si ya estás en una rama de trabajo que no sea `main` ni una `sN/*`, sigue en ella; si no, crea una nueva (`git checkout -b feat/<slug>`). Nunca commitear directo en `main`/`s1/start`.
 - El commit es por petición: al terminar cada petición, usar la skill `/commit`.
+- Si un cambio toca rutas, controladores, validadores o transformers de una capability, el mismo commit actualiza el documento OpenAPI (los decoradores del controlador y `backend/app/openapi/schemas.ts`, de donde se sirve en `/api.json`) y el README de esa capability en `docs/capabilities/<nombre>/README.md`.
 - `gh pr create` (con una descripción completa de los cambios en el cuerpo del PR) y el pase del subagente `adversarial-reviewer` sobre él van una sola vez, al terminar la unidad de trabajo, no al cerrar cada petición. No des la unidad por terminada hasta haber pasado al revisor.
 - No repitas ese resumen en el chat: la sesión se va a perder, el PR no. Responde solo con la URL del PR.
