@@ -30,9 +30,12 @@ function formatDay(day: string) {
   return dateFormatter.format(new Date(year, month - 1, date))
 }
 
+const NOT_FOUND_MESSAGE =
+  'Esta tarea no existe. Puede que se haya borrado o que el enlace esté mal.'
+
 export function TaskPage() {
   const { id } = useParams()
-  const { token } = useAuth()
+  const { token, expireSession } = useAuth()
 
   const [task, setTask] = useState<TaskDetail | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -46,11 +49,21 @@ export function TaskPage() {
   const [dueDateDraft, setDueDateDraft] = useState('')
 
   const taskId = Number(id)
+  // Una dirección como /tasks/abc o /tasks/1.5 no es la de ninguna tarea. Se
+  // dice igual que cuando el servidor no la encuentra, en lugar de dejar la
+  // pantalla cargando para siempre.
+  const isInvalidId = !Number.isInteger(taskId) || taskId < 1
 
   useEffect(() => {
-    if (!token || !Number.isInteger(taskId)) return
+    if (!token || isInvalidId) return
 
     let cancelled = false
+
+    // Al cambiar de tarea no puede quedar nada de la anterior: ni su contenido
+    // ni el error que diera.
+    setTask(null)
+    setLoadError(null)
+    setDueDateError(null)
 
     api
       .getTask(taskId, token)
@@ -61,9 +74,13 @@ export function TaskPage() {
       })
       .catch((error: unknown) => {
         if (cancelled) return
+        if (error instanceof ApiError && error.status === 401) {
+          expireSession(error.message)
+          return
+        }
         setLoadError(
           error instanceof ApiError && error.status === 404
-            ? 'Esta tarea no existe. Puede que se haya borrado o que el enlace esté mal.'
+            ? NOT_FOUND_MESSAGE
             : error instanceof ApiError
               ? error.message
               : 'No hemos podido cargar la tarea.',
@@ -73,7 +90,9 @@ export function TaskPage() {
     return () => {
       cancelled = true
     }
-  }, [taskId, token])
+  }, [taskId, token, isInvalidId, expireSession])
+
+  const shownError = isInvalidId ? NOT_FOUND_MESSAGE : loadError
 
   // El campo sigue a la tarea: al cargarla, al guardar y también cuando un
   // guardado falla y la fecha vuelve atrás.
@@ -97,6 +116,10 @@ export function TaskPage() {
       setTask(await api.setTaskDueDate(task.id, dueDate, token))
     } catch (error: unknown) {
       setTask(previous)
+      if (error instanceof ApiError && error.status === 401) {
+        expireSession(error.message)
+        return
+      }
       setDueDateError(
         error instanceof ApiError
           ? (error.fieldErrors.dueDate ?? error.message)
@@ -133,11 +156,11 @@ export function TaskPage() {
       </header>
 
       <main className="mx-auto max-w-3xl p-4 sm:p-6">
-        {loadError ? (
+        {shownError ? (
           <Alert variant="destructive">
             <AlertCircleIcon />
             <AlertDescription className="flex flex-col items-start gap-3">
-              <span>{loadError}</span>
+              <span>{shownError}</span>
               <Button variant="outline" size="sm" asChild>
                 <Link to="/tasks">Volver a la lista</Link>
               </Button>

@@ -106,9 +106,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [clearSession, token])
 
+  const expireSession = useCallback(
+    (message: string) => {
+      clearSession()
+      setSessionError(message)
+    },
+    [clearSession],
+  )
+
   const value = useMemo(
-    () => ({ user, token, status, sessionError, login, signup, logout }),
-    [user, token, status, sessionError, login, signup, logout],
+    () => ({
+      user,
+      token,
+      status,
+      sessionError,
+      login,
+      signup,
+      logout,
+      expireSession,
+    }),
+    [user, token, status, sessionError, login, signup, logout, expireSession],
   )
 
   return <AuthContext value={value}>{children}</AuthContext>

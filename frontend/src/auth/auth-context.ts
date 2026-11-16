@@ -12,6 +12,11 @@ export type AuthContextValue = {
   login: (payload: LoginPayload) => Promise<void>
   signup: (payload: SignupPayload) => Promise<void>
   logout: () => Promise<void>
+  /**
+   * Cierra la sesión local porque el servidor ya no reconoce el token (un 401 a
+   * mitad de uso) y deja dicho por qué, para que el login lo explique.
+   */
+  expireSession: (message: string) => void
 }
 
 /**

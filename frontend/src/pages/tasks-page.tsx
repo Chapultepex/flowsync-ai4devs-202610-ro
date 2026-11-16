@@ -23,7 +23,7 @@ import {
 const FIELDS = ['title'] as const
 
 export function TasksPage() {
-  const { user, token } = useAuth()
+  const { user, token, expireSession } = useAuth()
   // `useAuthForm` no tiene nada de específico del acceso: reparte los errores
   // del backend entre el aviso general y cada campo, que es lo mismo que hace
   // falta aquí. Se reutiliza en vez de duplicar esa lógica.
@@ -35,7 +35,9 @@ export function TasksPage() {
   // que no existe es un caso alcanzable de verdad y no una hipótesis. No se
   // guarda en ninguna otra parte — al entrar limpio a /tasks no hay filtro.
   const [searchParams, setSearchParams] = useSearchParams()
-  const statusParam = searchParams.get('status')
+  // `?status=` vacío es lo mismo que no pedir filtro: sin `||` llegaría como
+  // cadena vacía, que no es ningún estado y dejaría el control sin opción marcada.
+  const statusParam = searchParams.get('status') || null
 
   const [tasks, setTasks] = useState<Task[] | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -45,6 +47,9 @@ export function TasksPage() {
   // Cuántas tareas hechas hay, para distinguir «el espacio está vacío» de
   // «no queda nada abierto». Solo se resuelve cuando hace falta.
   const [doneCount, setDoneCount] = useState<number | null>(null)
+  // La cuenta de hechas ha fallado. Va aparte de `doneCount` a propósito: no
+  // saber cuántas hay no es lo mismo que saber que no hay ninguna.
+  const [doneCheckFailed, setDoneCheckFailed] = useState(false)
   const [title, setTitle] = useState('')
   const [statusError, setStatusError] = useState<string | null>(null)
   // Lo que una acción mía se ha llevado fuera de la vista actual. No es un
@@ -76,27 +81,26 @@ export function TasksPage() {
     setLoadError(null)
     setInvalidFilter(null)
     setDoneCount(null)
+    setDoneCheckFailed(false)
     setNotice(null)
     setStatusError(null)
 
     api
       .listTasks(token, statusParam ?? undefined)
-      .then(async (loaded) => {
+      .then((loaded) => {
         if (cancelled) return
         setTasks(loaded)
-
-        // Una vista por defecto vacía puede significar dos cosas muy
-        // distintas: que no hay nada, o que ya está todo hecho. Decir la
-        // primera cuando la verdad es la segunda le cuenta al equipo que no ha
-        // hecho nada. Una segunda consulta, y solo en este caso, lo resuelve.
-        if (statusParam || loaded.length > 0) return
-
-        const done = await api.listTasks(token, 'done').catch(() => [])
-        if (!cancelled) setDoneCount(done.length)
       })
       .catch((error: unknown) => {
         if (cancelled) return
         setTasks([])
+
+        // Una sesión que el servidor ya no reconoce no se arregla con un aviso:
+        // se cierra y el login explica por qué.
+        if (error instanceof ApiError && error.status === 401) {
+          expireSession(error.message)
+          return
+        }
 
         // El 422 sobre `status` es el filtro inventado, y tiene su propio
         // final: nunca se convierte en una lista vacía.
@@ -115,7 +119,7 @@ export function TasksPage() {
     return () => {
       cancelled = true
     }
-  }, [token, statusParam])
+  }, [token, statusParam, expireSession])
 
   const handleFilter = (status: TaskStatus | null) => {
     // Quitar el filtro es borrar el parámetro, no poner uno que diga «todas»:
@@ -137,7 +141,15 @@ export function TasksPage() {
     setNotice(null)
 
     return submit(async () => {
-      const created = await api.createTask({ title }, token)
+      let created: Task
+      try {
+        created = await api.createTask({ title }, token)
+      } catch (error: unknown) {
+        if (error instanceof ApiError && error.status === 401) {
+          expireSession(error.message)
+        }
+        throw error
+      }
       // La API devuelve la lista con las más recientes primero, así que la
       // recién creada entra por arriba. Sin recargar ni volver a pedirla.
       setTasks((current) => [created, ...(current ?? [])])
@@ -170,6 +182,10 @@ export function TasksPage() {
       )
       setPendingIds((current) => new Set(current).add(task.id))
       setStatusError(null)
+      // Cambiar un estado puede cambiar cuántas tareas hay hechas: la cuenta que
+      // se tuviera ya no vale y se vuelve a pedir si hace falta.
+      setDoneCount(null)
+      setDoneCheckFailed(false)
       setNotice(
         // Si el cambio la saca de la vista actual, desaparecer no puede
         // leerse como perderla: se dice adónde ha ido y cómo volver a verla.
@@ -193,6 +209,10 @@ export function TasksPage() {
             ) ?? current,
         )
         setNotice(null)
+        if (error instanceof ApiError && error.status === 401) {
+          expireSession(error.message)
+          return
+        }
         setStatusError(
           `No se ha podido cambiar el estado. ${
             error instanceof ApiError ? error.message : 'Inténtalo de nuevo.'
@@ -206,12 +226,53 @@ export function TasksPage() {
         })
       }
     },
-    [matchesFilter, pendingIds, token],
+    [matchesFilter, pendingIds, token, expireSession],
   )
 
   // Lo que se pinta no es lo que trajo la API sino lo que sigue cumpliendo el
   // filtro: de aquí sale que marcar algo como hecho lo saque de la vista.
   const visibleTasks = tasks?.filter((task) => matchesFilter(task.status))
+
+  // Una vista por defecto sin filas puede significar dos cosas muy distintas:
+  // que no hay nada, o que ya está todo hecho. Decir la primera cuando la
+  // verdad es la segunda le cuenta al equipo que no ha hecho nada. Una segunda
+  // consulta lo resuelve, y se hace cada vez que la vista se queda vacía, no
+  // solo al cargar: marcar como hecha la última tarea abierta también llega aquí.
+  // Espera a que no haya cambios de estado en vuelo, o contaría las hechas antes
+  // de que el servidor sepa de la última.
+  const needsDoneCount =
+    !statusParam &&
+    !invalidFilter &&
+    !loadError &&
+    visibleTasks !== undefined &&
+    visibleTasks.length === 0 &&
+    pendingIds.size === 0 &&
+    doneCount === null &&
+    !doneCheckFailed
+
+  useEffect(() => {
+    if (!token || !needsDoneCount) return
+
+    let cancelled = false
+
+    api
+      .listTasks(token, 'done')
+      .then((done) => {
+        if (!cancelled) setDoneCount(done.length)
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return
+        if (error instanceof ApiError && error.status === 401) {
+          expireSession(error.message)
+          return
+        }
+        setDoneCheckFailed(true)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [token, needsDoneCount, expireSession])
 
   // El estado pedido, si de verdad es uno de los tres. Se busca en vez de
   // afirmarlo con un `as`: lo que viene de la URL no merece ese voto de
@@ -346,6 +407,25 @@ export function TasksPage() {
               filtro o vuelve a la vista por defecto.
             </p>
           </div>
+        ) : doneCheckFailed ? (
+          // No se ha podido saber si hay tareas hechas. Decir «todavía no hay
+          // nada» sería afirmar algo que no se sabe.
+          <Alert variant="destructive">
+            <AlertCircleIcon />
+            <AlertDescription className="flex flex-col items-start gap-3">
+              <span>
+                No hemos podido comprobar si hay tareas terminadas, así que no
+                sabemos si esta vista está vacía de verdad.
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setDoneCheckFailed(false)}
+              >
+                Reintentar
+              </Button>
+            </AlertDescription>
+          </Alert>
         ) : doneCount === null ? (
           <div
             className="text-muted-foreground flex justify-center p-10"
