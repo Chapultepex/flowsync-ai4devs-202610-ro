@@ -1,6 +1,10 @@
 import User from '#models/user'
 import { test } from '@japa/runner'
 import testUtils from '@adonisjs/core/services/test_utils'
+import { emailUnico } from '../tasks/helpers.js'
+
+const ADA = emailUnico('ada')
+const SIN_NOMBRE = emailUnico('sin-nombre')
 
 /**
  * Registro de cuenta. Cubre los requisitos «Registro de una cuenta nueva»,
@@ -18,7 +22,7 @@ test.group('Auth | registro', (group) => {
   test('registrarse devuelve la cuenta y un token que ya sirve', async ({ client, assert }) => {
     const response = await client.post('/api/v1/auth/signup').json({
       fullName: 'Ada Lovelace',
-      email: 'ada@example.com',
+      email: ADA,
       password: 'secreto123',
       passwordConfirmation: 'secreto123',
     })
@@ -26,7 +30,7 @@ test.group('Auth | registro', (group) => {
     response.assertStatus(200)
 
     const { user, token } = response.body().data
-    assert.equal(user.email, 'ada@example.com')
+    assert.equal(user.email, ADA)
     assert.equal(user.fullName, 'Ada Lovelace')
     assert.equal(user.initials, 'AL')
     assert.isString(token)
@@ -37,13 +41,13 @@ test.group('Auth | registro', (group) => {
       .header('Authorization', `Bearer ${token}`)
 
     profile.assertStatus(200)
-    assert.equal(profile.body().data.email, 'ada@example.com')
+    assert.equal(profile.body().data.email, ADA)
   })
 
   test('una cuenta puede quedarse sin nombre', async ({ client, assert }) => {
     const response = await client.post('/api/v1/auth/signup').json({
       fullName: null,
-      email: 'sin-nombre@example.com',
+      email: SIN_NOMBRE,
       password: 'secreto123',
       passwordConfirmation: 'secreto123',
     })
@@ -55,7 +59,7 @@ test.group('Auth | registro', (group) => {
   test('la contraseña nunca sale en la respuesta', async ({ client, assert }) => {
     const response = await client.post('/api/v1/auth/signup').json({
       fullName: 'Ada Lovelace',
-      email: 'ada@example.com',
+      email: ADA,
       password: 'secreto123',
       passwordConfirmation: 'secreto123',
     })
@@ -68,27 +72,27 @@ test.group('Auth | registro', (group) => {
   test('una contraseña corta se rechaza y no crea cuenta', async ({ client, assert }) => {
     const response = await client.post('/api/v1/auth/signup').json({
       fullName: 'Ada Lovelace',
-      email: 'ada@example.com',
+      email: ADA,
       password: 'corta',
       passwordConfirmation: 'corta',
     })
 
     response.assertStatus(422)
     response.assertBodyContains({ errors: [{ field: 'password', rule: 'minLength' }] })
-    assert.isNull(await User.findBy('email', 'ada@example.com'))
+    assert.isNull(await User.findBy('email', ADA))
   })
 
   test('la confirmación tiene que coincidir', async ({ client, assert }) => {
     const response = await client.post('/api/v1/auth/signup').json({
       fullName: 'Ada Lovelace',
-      email: 'ada@example.com',
+      email: ADA,
       password: 'secreto123',
       passwordConfirmation: 'secreto456',
     })
 
     response.assertStatus(422)
     response.assertBodyContains({ errors: [{ field: 'passwordConfirmation' }] })
-    assert.isNull(await User.findBy('email', 'ada@example.com'))
+    assert.isNull(await User.findBy('email', ADA))
   })
 
   test('un email mal formado se rechaza', async ({ client }) => {
@@ -106,13 +110,13 @@ test.group('Auth | registro', (group) => {
   test('un email ya registrado no crea una segunda cuenta', async ({ client, assert }) => {
     await User.create({
       fullName: 'Ada Lovelace',
-      email: 'ada@example.com',
+      email: ADA,
       password: 'secreto123',
     })
 
     const response = await client.post('/api/v1/auth/signup').json({
       fullName: 'Otra Persona',
-      email: 'ada@example.com',
+      email: ADA,
       password: 'secreto123',
       passwordConfirmation: 'secreto123',
     })
@@ -120,7 +124,7 @@ test.group('Auth | registro', (group) => {
     response.assertStatus(422)
     response.assertBodyContains({ errors: [{ field: 'email' }] })
 
-    const cuentas = await User.query().where('email', 'ada@example.com')
+    const cuentas = await User.query().where('email', ADA)
     assert.lengthOf(cuentas, 1)
     assert.equal(cuentas[0].fullName, 'Ada Lovelace')
   })

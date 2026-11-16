@@ -1,6 +1,11 @@
 import { test } from '@japa/runner'
 import testUtils from '@adonisjs/core/services/test_utils'
 import type { ApiClient } from '@japa/api-client'
+import { emailUnico } from './helpers.js'
+
+const ADA = emailUnico('ada')
+const GRACE = emailUnico('grace')
+const SIN_NOMBRE = emailUnico('sin-nombre')
 
 /**
  * Requisito «Lo que cada tarea muestra de su responsable» de
@@ -59,7 +64,7 @@ test.group('Tasks | responsable de la tarea en la lista', (group) => {
 
   // Scenario «Responsable identificable», vía lista.
   test('la lista muestra el nombre y las iniciales del responsable', async ({ client, assert }) => {
-    const token = await registrar(client, 'Ada Lovelace', 'ada@example.com')
+    const token = await registrar(client, 'Ada Lovelace', ADA)
     const id = await crearTarea(client, token, 'Preparar informe')
 
     const lista = await listar(client, token)
@@ -73,8 +78,8 @@ test.group('Tasks | responsable de la tarea en la lista', (group) => {
   // «Esos datos bastan para saber quién la lleva»: cada fila lleva a su dueño,
   // también cuando la tarea es de otra persona.
   test('cada tarea de la lista lleva a su propio responsable', async ({ client, assert }) => {
-    const ada = await registrar(client, 'Ada Lovelace', 'ada@example.com')
-    const grace = await registrar(client, 'Grace Hopper', 'grace@example.com')
+    const ada = await registrar(client, 'Ada Lovelace', ADA)
+    const grace = await registrar(client, 'Grace Hopper', GRACE)
     const deAda = await crearTarea(client, ada, 'Preparar informe')
     const deGrace = await crearTarea(client, grace, 'Revisar el compilador')
 
@@ -91,7 +96,7 @@ test.group('Tasks | responsable de la tarea en la lista', (group) => {
     client,
     assert,
   }) => {
-    const token = await registrar(client, 'Ada Lovelace', 'ada@example.com')
+    const token = await registrar(client, 'Ada Lovelace', ADA)
     const id = await crearTarea(client, token, 'Preparar informe')
 
     const response = await client
@@ -106,7 +111,7 @@ test.group('Tasks | responsable de la tarea en la lista', (group) => {
 
   // Scenario «La tarea no filtra datos de cuenta», vía lista.
   test('la lista no incluye ningún dato de acceso de la cuenta', async ({ client, assert }) => {
-    const token = await registrar(client, 'Ada Lovelace', 'ada@example.com')
+    const token = await registrar(client, 'Ada Lovelace', ADA)
     await crearTarea(client, token, 'Preparar informe')
 
     const lista = await listar(client, token)
@@ -124,7 +129,7 @@ test.group('Tasks | responsable de la tarea en la lista', (group) => {
     client,
     assert,
   }) => {
-    const token = await registrar(client, null, 'sin-nombre@example.com')
+    const token = await registrar(client, null, SIN_NOMBRE)
     const id = await crearTarea(client, token, 'Preparar informe')
 
     const lista = await listar(client, token)

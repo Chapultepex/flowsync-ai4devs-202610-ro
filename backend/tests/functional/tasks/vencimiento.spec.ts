@@ -1,6 +1,17 @@
 import { test } from '@japa/runner'
 import testUtils from '@adonisjs/core/services/test_utils'
-import { HOY, consultar, crearTarea, estadoOk, fechaOk, ponerFecha, registrar } from './helpers.js'
+import {
+  HOY,
+  consultar,
+  crearTarea,
+  emailUnico,
+  estadoOk,
+  fechaOk,
+  ponerFecha,
+  registrar,
+} from './helpers.js'
+
+const ADA = emailUnico('ada')
 
 /**
  * Requisitos «Cuándo una tarea está vencida» y «Fijar, cambiar y retirar la
@@ -26,7 +37,7 @@ test.group('Tasks | vencimiento', (group) => {
     client,
     assert,
   }) => {
-    const token = await registrar(client, 'Ada Lovelace', 'ada@example.com')
+    const token = await registrar(client, 'Ada Lovelace', ADA)
     const id = await crearTarea(client, token, 'Preparar informe')
     await fechaOk(client, token, id, AYER)
 
@@ -42,7 +53,7 @@ test.group('Tasks | vencimiento', (group) => {
     client,
     assert,
   }) => {
-    const token = await registrar(client, 'Ada Lovelace', 'ada@example.com')
+    const token = await registrar(client, 'Ada Lovelace', ADA)
     const id = await crearTarea(client, token, 'Preparar informe')
     await fechaOk(client, token, id, HOY)
 
@@ -57,7 +68,7 @@ test.group('Tasks | vencimiento', (group) => {
     client,
     assert,
   }) => {
-    const token = await registrar(client, 'Ada Lovelace', 'ada@example.com')
+    const token = await registrar(client, 'Ada Lovelace', ADA)
     const id = await crearTarea(client, token, 'Preparar informe')
     await fechaOk(client, token, id, PASADA)
     await estadoOk(client, token, id, 'done')
@@ -74,7 +85,7 @@ test.group('Tasks | vencimiento', (group) => {
     client,
     assert,
   }) => {
-    const token = await registrar(client, 'Ada Lovelace', 'ada@example.com')
+    const token = await registrar(client, 'Ada Lovelace', ADA)
     const id = await crearTarea(client, token, 'Preparar informe')
     await estadoOk(client, token, id, 'done')
 
@@ -90,7 +101,7 @@ test.group('Tasks | vencimiento', (group) => {
     client,
     assert,
   }) => {
-    const token = await registrar(client, 'Ada Lovelace', 'ada@example.com')
+    const token = await registrar(client, 'Ada Lovelace', ADA)
     const id = await crearTarea(client, token, 'Preparar informe')
     await fechaOk(client, token, id, PASADA)
 
@@ -110,7 +121,7 @@ test.group('Tasks | vencimiento', (group) => {
     client,
     assert,
   }) => {
-    const token = await registrar(client, 'Ada Lovelace', 'ada@example.com')
+    const token = await registrar(client, 'Ada Lovelace', ADA)
     const id = await crearTarea(client, token, 'Preparar informe')
     await fechaOk(client, token, id, PASADA)
 
@@ -123,7 +134,7 @@ test.group('Tasks | vencimiento', (group) => {
 
   // Scenario «Quitar la fecha».
   test('quitar la fecha deja la tarea sin fecha y sin vencer', async ({ client, assert }) => {
-    const token = await registrar(client, 'Ada Lovelace', 'ada@example.com')
+    const token = await registrar(client, 'Ada Lovelace', ADA)
     const id = await crearTarea(client, token, 'Preparar informe')
     await fechaOk(client, token, id, PASADA)
 
@@ -141,7 +152,7 @@ test.group('Tasks | vencimiento', (group) => {
       client,
       assert,
     }) => {
-      const token = await registrar(client, 'Ada Lovelace', 'ada@example.com')
+      const token = await registrar(client, 'Ada Lovelace', ADA)
       const id = await crearTarea(client, token, 'Preparar informe')
       await fechaOk(client, token, id, '2026-09-30')
 
@@ -157,7 +168,7 @@ test.group('Tasks | vencimiento', (group) => {
 
   // Scenario «Tarea inexistente», al fijar la fecha.
   test('fijar la fecha de una tarea que no existe responde 404', async ({ client }) => {
-    const token = await registrar(client, 'Ada Lovelace', 'ada@example.com')
+    const token = await registrar(client, 'Ada Lovelace', ADA)
 
     const response = await ponerFecha(client, token, 99999999, '2026-09-30')
 

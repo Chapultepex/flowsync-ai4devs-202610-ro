@@ -1,6 +1,9 @@
 import { test } from '@japa/runner'
 import testUtils from '@adonisjs/core/services/test_utils'
-import { contar, listar, registrar, type TareaCreada } from './helpers.js'
+import { contar, emailUnico, listar, registrar, type TareaCreada } from './helpers.js'
+
+const ADA = emailUnico('ada')
+const GRACE = emailUnico('grace')
 
 /**
  * Requisitos «Creación de una tarea con solo el título», «Ninguna tarea sin
@@ -27,7 +30,7 @@ test.group('Tasks | crear una tarea', (group) => {
     client,
     assert,
   }) => {
-    const token = await registrar(client, 'Ada Lovelace', 'ada@example.com')
+    const token = await registrar(client, 'Ada Lovelace', ADA)
 
     const response = await crear(client, token, 'Revisar el informe')
 
@@ -40,8 +43,8 @@ test.group('Tasks | crear una tarea', (group) => {
 
   // Scenario «La tarea nace a nombre de quien la crea».
   test('la tarea nace a nombre de quien la crea', async ({ client, assert }) => {
-    const ada = await registrar(client, 'Ada Lovelace', 'ada@example.com')
-    const grace = await registrar(client, 'Grace Hopper', 'grace@example.com')
+    const ada = await registrar(client, 'Ada Lovelace', ADA)
+    const grace = await registrar(client, 'Grace Hopper', GRACE)
 
     const deAda = await crear(client, ada, 'Preparar informe')
     const deGrace = await crear(client, grace, 'Revisar el compilador')
@@ -55,7 +58,7 @@ test.group('Tasks | crear una tarea', (group) => {
     client,
     assert,
   }) => {
-    const token = await registrar(client, 'Ada Lovelace', 'ada@example.com')
+    const token = await registrar(client, 'Ada Lovelace', ADA)
     const antes = await contar(client, token)
 
     const response = await crear(client, token, '')
@@ -67,7 +70,7 @@ test.group('Tasks | crear una tarea', (group) => {
 
   // Scenario «Título de solo espacios».
   test('un título de solo espacios se rechaza igual que uno vacío', async ({ client, assert }) => {
-    const token = await registrar(client, 'Ada Lovelace', 'ada@example.com')
+    const token = await registrar(client, 'Ada Lovelace', ADA)
     const antes = await contar(client, token)
 
     const response = await crear(client, token, '   ')
@@ -79,7 +82,7 @@ test.group('Tasks | crear una tarea', (group) => {
 
   // Scenario «Espacios en los extremos».
   test('los espacios de los extremos del título se ignoran', async ({ client, assert }) => {
-    const token = await registrar(client, 'Ada Lovelace', 'ada@example.com')
+    const token = await registrar(client, 'Ada Lovelace', ADA)
 
     const response = await crear(client, token, '  Revisar el informe  ')
 
@@ -89,7 +92,7 @@ test.group('Tasks | crear una tarea', (group) => {
 
   // Scenario «Título en el límite».
   test('un título de exactamente 200 caracteres se crea íntegro', async ({ client, assert }) => {
-    const token = await registrar(client, 'Ada Lovelace', 'ada@example.com')
+    const token = await registrar(client, 'Ada Lovelace', ADA)
     const titulo = 'a'.repeat(200)
 
     const response = await crear(client, token, titulo)
@@ -103,7 +106,7 @@ test.group('Tasks | crear una tarea', (group) => {
     client,
     assert,
   }) => {
-    const token = await registrar(client, 'Ada Lovelace', 'ada@example.com')
+    const token = await registrar(client, 'Ada Lovelace', ADA)
     const antes = await contar(client, token)
 
     const response = await crear(client, token, 'a'.repeat(201))

@@ -1,7 +1,9 @@
 import { test } from '@japa/runner'
 import testUtils from '@adonisjs/core/services/test_utils'
 import Task from '#models/task'
-import { HOY, crearTarea, registrar } from './helpers.js'
+import { HOY, crearTarea, emailUnico, registrar } from './helpers.js'
+
+const ADA = emailUnico('ada')
 
 /**
  * Requisito «Las tareas exigen sesión» de `openspec/specs/tasks/spec.md`: sin un
@@ -37,7 +39,7 @@ test.group('Tasks | exigen sesión', (group) => {
     client,
     assert,
   }) => {
-    const token = await registrar(client, 'Ada Lovelace', 'ada@example.com')
+    const token = await registrar(client, 'Ada Lovelace', ADA)
     const id = await crearTarea(client, token, 'Preparar informe')
 
     const response = await client.get(`/api/v1/tasks/${id}?today=${HOY}`)
@@ -58,7 +60,7 @@ test.group('Tasks | exigen sesión', (group) => {
 
   // Scenario «Escribir sin haber entrado», al cambiar el estado.
   test('cambiar el estado sin sesión responde 401 y no cambia nada', async ({ client, assert }) => {
-    const token = await registrar(client, 'Ada Lovelace', 'ada@example.com')
+    const token = await registrar(client, 'Ada Lovelace', ADA)
     const id = await crearTarea(client, token, 'Preparar informe')
 
     const response = await client.patch(`/api/v1/tasks/${id}/status`).json({ status: 'done' })
@@ -70,7 +72,7 @@ test.group('Tasks | exigen sesión', (group) => {
 
   // Scenario «Escribir sin haber entrado», al fijar la fecha.
   test('fijar la fecha sin sesión responde 401 y no cambia nada', async ({ client, assert }) => {
-    const token = await registrar(client, 'Ada Lovelace', 'ada@example.com')
+    const token = await registrar(client, 'Ada Lovelace', ADA)
     const id = await crearTarea(client, token, 'Preparar informe')
 
     const response = await client

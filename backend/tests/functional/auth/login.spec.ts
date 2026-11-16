@@ -1,6 +1,10 @@
 import User from '#models/user'
 import { test } from '@japa/runner'
 import testUtils from '@adonisjs/core/services/test_utils'
+import { emailUnico } from '../tasks/helpers.js'
+
+const ADA = emailUnico('ada')
+const NADIE = emailUnico('nadie')
 
 /**
  * Inicio de sesión. Cubre el requisito «Inicio de sesión con email y
@@ -13,7 +17,7 @@ test.group('Auth | login', (group) => {
   async function cuenta() {
     return User.create({
       fullName: 'Ada Lovelace',
-      email: 'ada@example.com',
+      email: ADA,
       password: 'secreto123',
     })
   }
@@ -26,12 +30,12 @@ test.group('Auth | login', (group) => {
 
     const response = await client
       .post('/api/v1/auth/login')
-      .json({ email: 'ada@example.com', password: 'secreto123' })
+      .json({ email: ADA, password: 'secreto123' })
 
     response.assertStatus(200)
 
     const { user, token } = response.body().data
-    assert.equal(user.email, 'ada@example.com')
+    assert.equal(user.email, ADA)
 
     const profile = await client
       .get('/api/v1/account/profile')
@@ -45,7 +49,7 @@ test.group('Auth | login', (group) => {
 
     const response = await client
       .post('/api/v1/auth/login')
-      .json({ email: 'ada@example.com', password: 'no-es-la-suya' })
+      .json({ email: ADA, password: 'no-es-la-suya' })
 
     response.assertStatus(400)
     assert.notProperty(response.body(), 'token')
@@ -59,11 +63,11 @@ test.group('Auth | login', (group) => {
 
     const desconocido = await client
       .post('/api/v1/auth/login')
-      .json({ email: 'nadie@example.com', password: 'secreto123' })
+      .json({ email: NADIE, password: 'secreto123' })
 
     const equivocada = await client
       .post('/api/v1/auth/login')
-      .json({ email: 'ada@example.com', password: 'no-es-la-suya' })
+      .json({ email: ADA, password: 'no-es-la-suya' })
 
     // El scenario pide que sean INDISTINGUIBLES: si un día divergen, este test
     // cae, y con él la fuga que permitiría enumerar qué emails tienen cuenta.

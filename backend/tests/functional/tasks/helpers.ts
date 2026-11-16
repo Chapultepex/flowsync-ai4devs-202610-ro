@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import type { ApiClient } from '@japa/api-client'
 
 /**
@@ -103,4 +104,15 @@ export async function fechaOk(
 export async function contar(client: ApiClient, token: string, query: string = '') {
   const lista = await listar(client, token, query)
   return lista.length
+}
+
+/**
+ * Un email que no depende de que ninguno concreto esté libre en la base de
+ * desarrollo, que las suites functional comparten con el servidor. El resto del
+ * email se conserva (`@example.com`) porque algunas pruebas fijan las iniciales
+ * desde él: `ada.1a2b3c4d@example.com` sigue dando `AE`, igual que
+ * `ada@example.com`.
+ */
+export function emailUnico(local: string = 'ada') {
+  return `${local}.${randomUUID().slice(0, 8)}@example.com`
 }

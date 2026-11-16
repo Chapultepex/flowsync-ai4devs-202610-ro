@@ -1,6 +1,9 @@
 import User from '#models/user'
 import { test } from '@japa/runner'
 import testUtils from '@adonisjs/core/services/test_utils'
+import { emailUnico } from '../tasks/helpers.js'
+
+const ADA = emailUnico('ada')
 
 /**
  * Iniciales de la cuenta. Cubre los tres scenarios del requisito «Iniciales de
@@ -11,14 +14,9 @@ test.group('Auth | iniciales', (group) => {
   group.each.setup(() => testUtils.db().withGlobalTransaction())
 
   const casos: Array<[string, string | null, string, string]> = [
-    [
-      'un nombre de dos palabras da la inicial de cada una',
-      'Ada Lovelace',
-      'ada@example.com',
-      'AL',
-    ],
-    ['un nombre de una palabra da sus dos primeras letras', 'Ada', 'ada@example.com', 'AD'],
-    ['sin nombre, las iniciales salen del email', null, 'ada@example.com', 'AE'],
+    ['un nombre de dos palabras da la inicial de cada una', 'Ada Lovelace', ADA, 'AL'],
+    ['un nombre de una palabra da sus dos primeras letras', 'Ada', ADA, 'AD'],
+    ['sin nombre, las iniciales salen del email', null, ADA, 'AE'],
   ]
 
   for (const [titulo, fullName, email, esperadas] of casos) {

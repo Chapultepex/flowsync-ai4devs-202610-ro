@@ -1,6 +1,17 @@
 import { test } from '@japa/runner'
 import testUtils from '@adonisjs/core/services/test_utils'
-import { cambiarEstado, consultar, crearTarea, estadoOk, listar, registrar } from './helpers.js'
+import {
+  cambiarEstado,
+  consultar,
+  crearTarea,
+  emailUnico,
+  estadoOk,
+  listar,
+  registrar,
+} from './helpers.js'
+
+const ADA = emailUnico('ada')
+const GRACE = emailUnico('grace')
 
 /**
  * Requisitos «Tres estados fijos» y «Cambio de estado de cualquier tarea» de
@@ -17,7 +28,7 @@ test.group('Tasks | cambio de estado', (group) => {
     client,
     assert,
   }) => {
-    const token = await registrar(client, 'Ada Lovelace', 'ada@example.com')
+    const token = await registrar(client, 'Ada Lovelace', ADA)
     const id = await crearTarea(client, token, 'Preparar informe')
 
     const response = await cambiarEstado(client, token, id, 'in_progress')
@@ -33,8 +44,8 @@ test.group('Tasks | cambio de estado', (group) => {
     client,
     assert,
   }) => {
-    const ada = await registrar(client, 'Ada Lovelace', 'ada@example.com')
-    const grace = await registrar(client, 'Grace Hopper', 'grace@example.com')
+    const ada = await registrar(client, 'Ada Lovelace', ADA)
+    const grace = await registrar(client, 'Grace Hopper', GRACE)
     const id = await crearTarea(client, ada, 'Preparar informe')
 
     const response = await cambiarEstado(client, grace, id, 'in_progress')
@@ -45,7 +56,7 @@ test.group('Tasks | cambio de estado', (group) => {
 
   // Scenario «Vuelta atrás desde hecho».
   test('una tarea hecha puede volver a pendiente', async ({ client, assert }) => {
-    const token = await registrar(client, 'Ada Lovelace', 'ada@example.com')
+    const token = await registrar(client, 'Ada Lovelace', ADA)
     const id = await crearTarea(client, token, 'Preparar informe')
     await estadoOk(client, token, id, 'done')
 
@@ -57,7 +68,7 @@ test.group('Tasks | cambio de estado', (group) => {
 
   // Scenario «Cambiar el estado no toca nada más».
   test('cambiar el estado no cambia el título ni el responsable', async ({ client, assert }) => {
-    const token = await registrar(client, 'Ada Lovelace', 'ada@example.com')
+    const token = await registrar(client, 'Ada Lovelace', ADA)
     const id = await crearTarea(client, token, 'Preparar informe')
 
     const response = await cambiarEstado(client, token, id, 'done')
@@ -72,7 +83,7 @@ test.group('Tasks | cambio de estado', (group) => {
     client,
     assert,
   }) => {
-    const token = await registrar(client, 'Ada Lovelace', 'ada@example.com')
+    const token = await registrar(client, 'Ada Lovelace', ADA)
     const id = await crearTarea(client, token, 'Preparar informe')
 
     const response = await cambiarEstado(client, token, id, 'archivado')
@@ -85,7 +96,7 @@ test.group('Tasks | cambio de estado', (group) => {
 
   // Scenario «Tarea inexistente».
   test('cambiar el estado de una tarea que no existe responde 404', async ({ client }) => {
-    const token = await registrar(client, 'Ada Lovelace', 'ada@example.com')
+    const token = await registrar(client, 'Ada Lovelace', ADA)
 
     const response = await cambiarEstado(client, token, 99999999, 'done')
 

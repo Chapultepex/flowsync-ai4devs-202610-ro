@@ -6,10 +6,13 @@ import {
   cambiarEstado,
   consultar,
   crearTarea,
+  emailUnico,
   listar,
   ponerFecha,
   registrar,
 } from './helpers.js'
+
+const ADA = emailUnico('ada')
 
 /**
  * Refuerzo de los tests del requisito «Lo que cada tarea muestra de su
@@ -25,12 +28,28 @@ import {
  * que el servidor de desarrollo.
  */
 
-const EMAIL = 'ada@example.com'
+const EMAIL = ADA
 
-/** Texto de la respuesta entera: si el email o la contraseña viajan, están aquí. */
+/** Texto de la respuesta entera: si el email o la contraseña viajan como valor, están aquí. */
 function cuerpoEntero(response: { body(): unknown }) {
   return JSON.stringify(response.body())
 }
+
+/**
+ * Todas las claves de un valor JSON, a cualquier profundidad. Buscar una palabra
+ * en el texto de la respuesta confunde una clave `token` con un título que la
+ * contenga; recorrer las claves mira lo que importa, que es si el campo viaja.
+ */
+function clavesDe(valor: unknown): string[] {
+  if (Array.isArray(valor)) return valor.flatMap((elemento) => clavesDe(elemento))
+  if (valor !== null && typeof valor === 'object') {
+    return Object.entries(valor).flatMap(([clave, hijo]) => [clave, ...clavesDe(hijo)])
+  }
+  return []
+}
+
+/** Campos de acceso que ninguna respuesta de tareas puede llevar, con ese nombre. */
+const CLAVES_PROHIBIDAS = ['token', 'password', 'email', 'rememberMeToken']
 
 test.group('Tasks | responsable, comprobaciones estrictas', (group) => {
   group.each.setup(() => testUtils.db().withGlobalTransaction())
@@ -112,8 +131,10 @@ test.group('Tasks | responsable, comprobaciones estrictas', (group) => {
       const texto = cuerpoEntero(response)
       assert.notInclude(texto, EMAIL, `${nombre}: el email viaja en la respuesta`)
       assert.notInclude(texto, 'secreto123', `${nombre}: la contraseña viaja en la respuesta`)
-      assert.notInclude(texto, 'password', `${nombre}: aparece un campo de contraseña`)
-      assert.notInclude(texto, 'token', `${nombre}: aparece un token`)
+      const claves = clavesDe(response.body())
+      for (const prohibida of CLAVES_PROHIBIDAS) {
+        assert.notInclude(claves, prohibida, `${nombre}: viaja el campo «${prohibida}»`)
+      }
     }
   })
 })

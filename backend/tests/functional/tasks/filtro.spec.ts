@@ -1,7 +1,9 @@
 import { test } from '@japa/runner'
 import testUtils from '@adonisjs/core/services/test_utils'
 import Task from '#models/task'
-import { crearTarea, estadoOk, listar, pedirLista, registrar } from './helpers.js'
+import { crearTarea, emailUnico, estadoOk, listar, pedirLista, registrar } from './helpers.js'
+
+const ADA = emailUnico('ada')
 
 /**
  * Requisitos «Acotar la lista por estado», «Un filtro válido sin resultados es
@@ -31,7 +33,7 @@ test.group('Tasks | filtro de la lista', (group) => {
     client,
     assert,
   }) => {
-    const token = await registrar(client, 'Ada Lovelace', 'ada@example.com')
+    const token = await registrar(client, 'Ada Lovelace', ADA)
     await tresTareas(client, token)
 
     const response = await pedirLista(client, token, '?status=archivado')
@@ -46,7 +48,7 @@ test.group('Tasks | filtro de la lista', (group) => {
     client,
     assert,
   }) => {
-    const token = await registrar(client, 'Ada Lovelace', 'ada@example.com')
+    const token = await registrar(client, 'Ada Lovelace', ADA)
     await Task.query().delete()
     await crearTarea(client, token, 'Pendiente')
 
@@ -60,7 +62,7 @@ test.group('Tasks | filtro de la lista', (group) => {
 
   // Scenario «El estado inventado no pasa a existir».
   test('pedir un estado inventado no cambia ninguna tarea', async ({ client, assert }) => {
-    const token = await registrar(client, 'Ada Lovelace', 'ada@example.com')
+    const token = await registrar(client, 'Ada Lovelace', ADA)
     const { pendiente, enCurso, hecha } = await tresTareas(client, token)
 
     await pedirLista(client, token, '?status=archivado')
@@ -79,7 +81,7 @@ test.group('Tasks | filtro de la lista', (group) => {
       client,
       assert,
     }) => {
-      const token = await registrar(client, 'Ada Lovelace', 'ada@example.com')
+      const token = await registrar(client, 'Ada Lovelace', ADA)
       const ids = await tresTareas(client, token)
       const suyo = { pending: ids.pendiente, in_progress: ids.enCurso, done: ids.hecha }[estado]
 
@@ -107,7 +109,7 @@ test.group('Tasks | filtro de la lista', (group) => {
     client,
     assert,
   }) => {
-    const token = await registrar(client, 'Ada Lovelace', 'ada@example.com')
+    const token = await registrar(client, 'Ada Lovelace', ADA)
     const { pendiente, enCurso, hecha } = await tresTareas(client, token)
 
     const lista = await listar(client, token)
@@ -123,7 +125,7 @@ test.group('Tasks | filtro de la lista', (group) => {
     client,
     assert,
   }) => {
-    const token = await registrar(client, 'Ada Lovelace', 'ada@example.com')
+    const token = await registrar(client, 'Ada Lovelace', ADA)
     await Task.query().delete()
     await crearTarea(client, token, 'Pendiente')
 
@@ -138,7 +140,7 @@ test.group('Tasks | filtro de la lista', (group) => {
     client,
     assert,
   }) => {
-    const token = await registrar(client, 'Ada Lovelace', 'ada@example.com')
+    const token = await registrar(client, 'Ada Lovelace', ADA)
     await Task.query().delete()
 
     const sinAcotar = await pedirLista(client, token)
@@ -157,7 +159,7 @@ test.group('Tasks | filtro de la lista', (group) => {
     client,
     assert,
   }) => {
-    const token = await registrar(client, 'Ada Lovelace', 'ada@example.com')
+    const token = await registrar(client, 'Ada Lovelace', ADA)
     const { pendiente, hecha } = await tresTareas(client, token)
 
     const response = await pedirLista(client, token, '?status=pending&status=done')
@@ -175,9 +177,32 @@ test.group('Tasks | filtro de la lista', (group) => {
     )
   })
 
+  // Scenario «Un solo estado por petición», con el parámetro escrito como
+  // lista (`status[]=...`), que es otra forma de repetirlo. Los casos con un
+  // valor vacío al final (`status=pending&status=`) no se prueban: la spec no
+  // dice si un valor vacío cuenta como «otro estado» o como ausencia.
+  test('con status[] repetido, el último sustituye al anterior', async ({ client, assert }) => {
+    const token = await registrar(client, 'Ada Lovelace', ADA)
+    const { pendiente, hecha } = await tresTareas(client, token)
+
+    const response = await pedirLista(client, token, '?status[]=pending&status[]=done')
+
+    response.assertStatus(200)
+    const lista = response.body().data as Array<{ id: number; status: string }>
+    assert.isTrue(lista.every((t) => t.status === 'done'))
+    assert.include(
+      lista.map((t) => t.id),
+      hecha
+    )
+    assert.notInclude(
+      lista.map((t) => t.id),
+      pendiente
+    )
+  })
+
   // Scenario «Acotar no cambia nada».
   test('acotar la lista no cambia el estado de ninguna tarea', async ({ client, assert }) => {
-    const token = await registrar(client, 'Ada Lovelace', 'ada@example.com')
+    const token = await registrar(client, 'Ada Lovelace', ADA)
     const { pendiente, enCurso, hecha } = await tresTareas(client, token)
 
     for (const estado of ['pending', 'in_progress', 'done']) {

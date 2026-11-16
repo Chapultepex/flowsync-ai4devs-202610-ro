@@ -1,6 +1,10 @@
 import User from '#models/user'
 import { test } from '@japa/runner'
 import testUtils from '@adonisjs/core/services/test_utils'
+import { emailUnico } from '../tasks/helpers.js'
+
+const ADA = emailUnico('ada')
+const ALAN = emailUnico('alan')
 
 /**
  * Perfil, cierre de sesión y protección de las rutas de cuenta. Cubre los
@@ -10,7 +14,7 @@ import testUtils from '@adonisjs/core/services/test_utils'
 test.group('Auth | sesión', (group) => {
   group.each.setup(() => testUtils.db().withGlobalTransaction())
 
-  async function sesion(client: any, email = 'ada@example.com') {
+  async function sesion(client: any, email = ADA) {
     await User.create({ fullName: 'Ada Lovelace', email, password: 'secreto123' })
 
     const response = await client.post('/api/v1/auth/login').json({ email, password: 'secreto123' })
@@ -29,7 +33,7 @@ test.group('Auth | sesión', (group) => {
 
     const perfil = response.body().data
     assert.properties(perfil, ['id', 'fullName', 'email', 'initials', 'createdAt', 'updatedAt'])
-    assert.equal(perfil.email, 'ada@example.com')
+    assert.equal(perfil.email, ADA)
   })
 
   test('sin cabecera de autorización no se devuelve nada de la cuenta', async ({ client }) => {
@@ -72,7 +76,7 @@ test.group('Auth | sesión', (group) => {
 
     const otroLogin = await client
       .post('/api/v1/auth/login')
-      .json({ email: 'ada@example.com', password: 'secreto123' })
+      .json({ email: ADA, password: 'secreto123' })
     const segunda = otroLogin.body().data.token
 
     await client.post('/api/v1/account/logout').header('Authorization', `Bearer ${primera}`)
@@ -87,7 +91,7 @@ test.group('Auth | sesión', (group) => {
   test('el registro y el login siguen siendo públicos', async ({ client }) => {
     const response = await client.post('/api/v1/auth/signup').json({
       fullName: 'Alan Turing',
-      email: 'alan@example.com',
+      email: ALAN,
       password: 'secreto123',
       passwordConfirmation: 'secreto123',
     })

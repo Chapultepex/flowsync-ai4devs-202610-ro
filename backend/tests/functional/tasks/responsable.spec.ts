@@ -1,5 +1,9 @@
 import { test } from '@japa/runner'
 import testUtils from '@adonisjs/core/services/test_utils'
+import { emailUnico } from './helpers.js'
+
+const ADA = emailUnico('ada')
+const SIN_NOMBRE = emailUnico('sin-nombre')
 
 /**
  * Requisito «Lo que cada tarea muestra de su responsable» de
@@ -24,7 +28,7 @@ test.group('Tasks | responsable de la tarea', (group) => {
   test('la tarea muestra el nombre y las iniciales del responsable', async ({ client, assert }) => {
     const signup = await client.post('/api/v1/auth/signup').json({
       fullName: 'Ada Lovelace',
-      email: 'ada@example.com',
+      email: ADA,
       password: 'secreto123',
       passwordConfirmation: 'secreto123',
     })
@@ -50,7 +54,7 @@ test.group('Tasks | responsable de la tarea', (group) => {
   test('la tarea no incluye el email ni otros datos de la cuenta', async ({ client, assert }) => {
     const signup = await client.post('/api/v1/auth/signup').json({
       fullName: 'Ada Lovelace',
-      email: 'ada@example.com',
+      email: ADA,
       password: 'secreto123',
       passwordConfirmation: 'secreto123',
     })
@@ -82,7 +86,7 @@ test.group('Tasks | responsable de la tarea', (group) => {
   test('un responsable sin nombre devuelve nombre nulo e iniciales', async ({ client, assert }) => {
     const signup = await client.post('/api/v1/auth/signup').json({
       fullName: null,
-      email: 'sin-nombre@example.com',
+      email: SIN_NOMBRE,
       password: 'secreto123',
       passwordConfirmation: 'secreto123',
     })
