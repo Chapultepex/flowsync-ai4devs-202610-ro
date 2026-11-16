@@ -22,7 +22,8 @@ export class TaskAssignee {
 
   @ApiProperty({
     schema: { type: 'string', nullable: true },
-    description: 'Nulo si la cuenta se registró sin nombre.',
+    description:
+      'Nulo si la cuenta no tiene nombre: registrada sin él, o con el nombre vacío o en blanco.',
   })
   declare fullName: string | null
 
