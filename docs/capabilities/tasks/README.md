@@ -43,6 +43,7 @@ Las reglas están en la [spec](../../../openspec/specs/tasks/spec.md); aquí sol
 | Cuándo una tarea está vencida | «Cuándo una tarea está vencida» | `Task.isOverdueOn` en el modelo: única definición |
 | Día de referencia | «El día de referencia lo pone quien mira» | `taskReferenceDayValidator` y `setTaskDueDateValidator`: `today` obligatorio, sin valor por defecto |
 | La lista no lleva el vencimiento | «La lista no lleva el vencimiento» | Dos transformers: [`task_transformer.ts`](../../../backend/app/transformers/task_transformer.ts) (lista) y [`task_detail_transformer.ts`](../../../backend/app/transformers/task_detail_transformer.ts) (detalle) |
+| Identificador de la tarea | «Tarea que no existe», «Tarea inexistente» | `.where('id', ...)` sobre el grupo `tasks` en `routes.ts`: solo enteros positivos sin ceros delante; cualquier otra forma (`abc`, `5e0`, `05`) no encaja con la ruta y responde `404` |
 | Exigir sesión | «Las tareas exigen sesión» | `middleware.auth()` sobre el grupo `tasks` en `routes.ts` |
 
 La tabla `tasks` (migraciones `create_tasks_table` y `add_due_date_to_tasks_table`) guarda `title` (hasta 200 caracteres), `status` (texto, por defecto `pending`), el responsable como clave a `users` con borrado en cascada, las marcas de tiempo y `due_date` como fecha sin hora, nulable.

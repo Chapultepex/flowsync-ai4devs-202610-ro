@@ -47,6 +47,10 @@ router
       })
       .prefix('tasks')
       .as('tasks')
+      // El id es un entero positivo escrito de una sola manera. Sin esto llega
+      // como texto y SQLite lo convierte al comparar con la columna entera, así
+      // que `5e0` o `05` abrirían la tarea 5 en lugar de responder 404.
+      .where('id', { match: /^[1-9][0-9]*$/, cast: (value) => Number(value) })
       .use(middleware.auth())
   })
   .prefix('/api/v1')
