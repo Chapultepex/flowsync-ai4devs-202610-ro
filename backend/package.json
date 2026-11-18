@@ -15,7 +15,9 @@
     "test": "node ace test",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "openapi:generate": "node --import @poppinss/ts-exec bin/openapi.ts generate",
+    "openapi:check": "node --import @poppinss/ts-exec bin/openapi.ts check"
   },
   "imports": {
     "#controllers/*": "./app/controllers/*.js",
