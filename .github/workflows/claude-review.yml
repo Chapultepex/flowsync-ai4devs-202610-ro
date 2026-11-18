@@ -1,0 +1,49 @@
+name: Claude review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+# Una revisión por PR: un push nuevo cancela la que esté en curso.
+concurrency:
+  group: claude-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+# Lo mínimo para revisar y comentar. `id-token: write` lo pide la acción para
+# canjear su token de GitHub App por OIDC; no da acceso a nada del repositorio.
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: anthropics/claude-code-action@v1
+        with:
+          # Camino por suscripción. Si usas clave de API de la consola, cambia
+          # esta línea por `anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}`.
+          # Ver docs/ci-revisor.md: no son intercambiables.
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: >-
+            --model sonnet --effort medium --max-turns 40
+            --allowedTools "Read,Grep,Glob,mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
+          prompt: |
+            Revisa este pull request (${{ github.repository }}#${{ github.event.pull_request.number }}).
+
+            1. Lee `REVIEW.md` (cómo calibrar la revisión) y `CLAUDE.md`, y
+               contrasta el cambio contra sus reglas.
+            2. Mira el diff con `gh pr diff` y abre con Read los archivos que toca.
+            3. Busca errores reales: lógica incorrecta, casos límite, regresiones,
+               fallos de seguridad y reglas de proceso incumplidas. No comentes
+               estilo ni formato: ya lo cubren prettier y eslint.
+            4. Publica cada hallazgo como comentario en línea sobre la línea
+               afectada. Si no hay hallazgos, deja un solo comentario diciéndolo.
+
+            No redirijas la salida de ningún comando a ficheros: lee siempre la
+            salida directa. No modifiques el repositorio.
