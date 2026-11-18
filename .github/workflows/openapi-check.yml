@@ -1,0 +1,39 @@
+name: OpenAPI check
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Sin permisos por defecto: el trabajo solo necesita leer el repositorio.
+permissions:
+  contents: read
+
+jobs:
+  openapi-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      # Valores de relleno: `start/env.ts` valida el entorno al arrancar la app
+      # y el check no usa base de datos ni sesiones. No son secretos.
+      NODE_ENV: test
+      PORT: '3333'
+      HOST: localhost
+      LOG_LEVEL: info
+      APP_KEY: ci-placeholder-key-not-a-secret-0123456789
+      APP_URL: http://localhost:3333
+      SESSION_DRIVER: memory
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci --ignore-scripts
+      - run: npm run openapi:check
