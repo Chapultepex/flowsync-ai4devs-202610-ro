@@ -36,7 +36,8 @@ jobs:
           prompt: |
             Revisa este pull request (${{ github.repository }}#${{ github.event.pull_request.number }}).
 
-            1. Lee `CLAUDE.md` y contrasta el cambio contra sus reglas.
+            1. Lee `REVIEW.md` (cómo calibrar la revisión) y `CLAUDE.md`, y
+               contrasta el cambio contra sus reglas.
             2. Mira el diff con `gh pr diff` y abre con Read los archivos que toca.
             3. Busca errores reales: lógica incorrecta, casos límite, regresiones,
                fallos de seguridad y reglas de proceso incumplidas. No comentes
